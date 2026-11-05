@@ -457,8 +457,8 @@ static bool init_serial() {
     tio.c_lflag = 0;
     tio.c_cflag &= ~(CBAUD | CBAUDEX | CSIZE | PARENB | CSTOPB| CRTSCTS);
     tio.c_cflag |= CS8 | CLOCAL | CREAD | BOTHER ;
-    tio.c_ispeed = 4000000;
-    tio.c_ospeed = 4000000;
+    tio.c_ispeed = 3000000;
+    tio.c_ospeed = 3000000;
 
     if (ioctl(g_serialFd, TCSETS2, &tio) < 0) {
         perror("TCSETS2");
@@ -466,7 +466,7 @@ static bool init_serial() {
     }
 
     tcflush(g_serialFd, TCOFLUSH);
-    printf("Serial OK: %s @ 4Mbps\n", SERIAL_DEV);
+    printf("Serial OK: %s @ 3Mbps\n", SERIAL_DEV);
     return true;
 }
 

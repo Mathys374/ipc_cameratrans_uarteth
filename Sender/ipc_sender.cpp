@@ -383,7 +383,7 @@ static void cleanup_mpp() {
     if (g_mppCtx) { mpp_destroy(g_mppCtx); g_mppCtx = nullptr; g_mppApi = nullptr; }
 }
 
-/* --- 串口配置（termios2 自定义 4Mbps） --- */
+/* --- 串口配置（termios2 自定义 3Mbps） --- */
 static bool init_serial() {
     g_serialFd = open(SERIAL_DEV, O_RDWR | O_NOCTTY | O_NONBLOCK);
     if (g_serialFd < 0) { perror("open serial"); return false; }
@@ -422,8 +422,8 @@ static bool init_serial() {
     tio.c_lflag = 0;
     tio.c_cflag &= ~(CBAUD | CBAUDEX | CSIZE | PARENB | CSTOPB| CRTSCTS);
     tio.c_cflag |= CS8 | CLOCAL | CREAD | BOTHER ;
-    tio.c_ispeed = 4000000;
-    tio.c_ospeed = 4000000;
+    tio.c_ispeed = 3000000;
+    tio.c_ospeed = 3000000;
     
     if (ioctl(g_serialFd, TCSETS2, &tio) < 0) {
         perror("TCSETS2");
@@ -431,7 +431,7 @@ static bool init_serial() {
     }
 
     tcflush(g_serialFd, TCOFLUSH);
-    printf("Serial OK: %s @ 4Mbps\n", SERIAL_DEV);
+    printf("Serial OK: %s @ 3Mbps\n", SERIAL_DEV);
     return true;
 }
 
