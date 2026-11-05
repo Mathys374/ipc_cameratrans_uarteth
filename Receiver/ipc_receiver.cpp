@@ -261,12 +261,14 @@ static bool is_idr_packet(const uint8_t* data, size_t len) {
 static void send_reverse_byte(uint8_t val) {
     uint8_t req[256];
     memset(req, val, sizeof(req));
-    // 所有已打开的通路都发一份，确保发送端无论走哪条介质都能收到
+
     if (g_udpFd >= 0) {
-        sendto(g_udpFd, req, sizeof(req), 0, (struct sockaddr*)&g_remoteAddr, sizeof(g_remoteAddr));
+        // 网口是 UDP 数据报，0xEE 用 30 字节短包；0xFF 保持 256
+        size_t udp_len = (val == 0xEE) ? 30 : sizeof(req);
+        sendto(g_udpFd, req, udp_len, 0, (struct sockaddr*)&g_remoteAddr, sizeof(g_remoteAddr));
     }
     if (g_serialFd >= 0) {
-        write(g_serialFd, req, sizeof(req));
+        write(g_serialFd, req, sizeof(req));   // 串口仍发 256 字节
     }
 }
 
