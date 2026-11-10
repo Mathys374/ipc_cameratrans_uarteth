@@ -912,7 +912,8 @@ int main(int argc, char** argv) {
     if (!init_mpp_encoder()) { cleanup_camera(); return 1; }
 
     // ===== 双初始化传输层，谁成功用谁 =====
-    bool serial_ok = init_serial();                                                                                                                                                                                                               
+    bool serial_ok = init_serial();
+    // bool serial_ok = false ;                                                                                                                                                                                                               
     bool udp_ok    = init_udp();
 
     // 都没开 → 报错退出
@@ -973,10 +974,28 @@ int main(int argc, char** argv) {
     
     // 主循环
     while (g_running) {
+        /*
         // 运行时自动回退：网口模式下 15 秒收不到接收端 0xEE 应答 → 切换串口
         {
             static bool s_switched = false;
             if (!s_switched && g_useUdp.load() && serial_ok && !g_receiverReady.load()
+                && time(nullptr) - g_startTime >= 15) {
+                s_switched = true;
+                g_useUdp = false;
+                g_useSerial = true;
+                g_fecChunkSize = 1024;
+                printf("[自动切换] 网口 15 秒无任何接收端应答，切换到串口图传\n");
+            }
+        }
+        */
+
+        // 注意：一旦网口接通过（收到过 0xEE），永久信任网口，后续即使 15 秒无应答也不回退串口
+        {
+            static bool s_switched = false;
+            static bool s_udpEverReady = false;  // 网口曾经接通过（收到过 0xEE）
+            if (g_receiverReady.load()) s_udpEverReady = true;
+            if (!s_switched && g_useUdp.load() && serial_ok && !s_udpEverReady
+                && !g_receiverReady.load()
                 && time(nullptr) - g_startTime >= 15) {
                 s_switched = true;
                 g_useUdp = false;

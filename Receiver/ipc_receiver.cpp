@@ -263,9 +263,8 @@ static void send_reverse_byte(uint8_t val) {
     memset(req, val, sizeof(req));
 
     if (g_udpFd >= 0) {
-        // 网口是 UDP 数据报，0xEE 用 30 字节短包；0xFF 保持 256
-        size_t udp_len = (val == 0xEE) ? 30 : sizeof(req);
-        sendto(g_udpFd, req, udp_len, 0, (struct sockaddr*)&g_remoteAddr, sizeof(g_remoteAddr));
+        // 网口是 UDP 数据报，反向信号（0xFF/0xEE）统一用 30 字节短包
+        sendto(g_udpFd, req, 30, 0, (struct sockaddr*)&g_remoteAddr, sizeof(g_remoteAddr));
     }
     if (g_serialFd >= 0) {
         write(g_serialFd, req, sizeof(req));   // 串口仍发 256 字节
