@@ -976,8 +976,19 @@ int main(int argc, char** argv) {
         cleanup_mpp(); cleanup_drm(); return 1;
     }
 
-    // 接收端同时监听所有已打开通路并双路发反向信号；此处仅打印自动检测结果
-    bool link = net_link_up();
+    // ===== 自动选择通路：检测网线物理连接 (carrier) =====
+    printf("正在唤醒网卡并检测物理链路 (最多等待 5 秒)...\n");
+    system("ifconfig eth0 up 2>/dev/null"); // 强制唤醒网卡，如果网卡是 down 状态，carrier 是读不到的
+
+    bool link = false;
+    for (int i = 0; i < 50; i++) { // 循环 50 次，每次 100ms，最多等 5 秒
+        if (net_link_up()) {
+            link = true;
+            break;
+        }
+        usleep(100000); // 停顿 100 毫秒
+    }
+
     const char* mode_str;
     if (argc >= 2 && strcmp(argv[1], "--serial") == 0) {
         mode_str = "串口 (强制)";
@@ -1039,7 +1050,7 @@ int main(int argc, char** argv) {
         gettimeofday(&stat_tv, NULL);
         uint64_t now_ms = (uint64_t)stat_tv.tv_sec * 1000 + stat_tv.tv_usec / 1000;
 
-        if (now_ms - g_lastStatTimeMs >= 100) {
+        if (now_ms - g_lastStatTimeMs >= 1000) {
             uint64_t elapsed_ms = now_ms - g_lastStatTimeMs;
             float elapsed_sec = elapsed_ms / 1000.0f;
             float period_sec = (now_ms - g_startTimeMs) / 1000.0f;

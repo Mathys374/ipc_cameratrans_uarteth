@@ -9,11 +9,11 @@ MPP_LIB = /home/alientek/rv1126_mpp/lib
 RGA_INC = /home/alientek/librga-main/include
 RGA_LIB = /home/alientek/rv1126_rga/lib
 
-# ★ 新增：分别定义 C 和 C++ 编译器
+# 分别定义 C 和 C++ 编译器
 CC       = $(CROSS_COMPILE)gcc
 CXX      = $(CROSS_COMPILE)g++
 
-# ★ 新增：抽取公共编译选项
+# 抽取公共编译选项
 COMMON_FLAGS = -O3 -Wall -march=armv8-a+simd -ftree-vectorize \
                -I/opt/atk-dlrv1126b-toolchain/aarch64-buildroot-linux-gnu/sysroot/usr/include/libdrm \
                -I$(MPP_INC) \
@@ -30,7 +30,7 @@ LDFLAGS  = -L$(MPP_LIB) -Wl,-rpath-link,$(MPP_LIB) \
 
 TARGET   = ipc_receiver_uarteth
 
-# ★ 新增：区分 C 源文件和 C++ 源文件
+# 区分 C 源文件和 C++ 源文件
 C_SRCS   = ../fec.c
 CXX_SRCS = ipc_receiver.cpp
 

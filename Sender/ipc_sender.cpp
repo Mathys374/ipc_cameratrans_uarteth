@@ -456,6 +456,12 @@ static bool init_udp() {
     setsockopt(g_udpFd, SOL_SOCKET, SO_RCVBUF, &buf_size, sizeof(buf_size));
     setsockopt(g_udpFd, SOL_SOCKET, SO_SNDBUF, &buf_size, sizeof(buf_size));
 
+    // 读取实际生效的缓冲区大小
+    int actual_buf_size = 0;
+    socklen_t optlen = sizeof(actual_buf_size);
+    getsockopt(g_udpFd, SOL_SOCKET, SO_SNDBUF, &actual_buf_size, &optlen);
+    printf("我申请了 %d 字节，内核实际给了我 %d 字节\n", buf_size, actual_buf_size);
+
     struct sockaddr_in localAddr = {};
     localAddr.sin_family = AF_INET;
     localAddr.sin_port = htons(LOCAL_PORT);
@@ -569,11 +575,26 @@ static bool write_all_paced(const uint8_t* data, size_t len) {
 /* --- 介质无关的物理发送：use_udp 由每帧入口快照传入，保证一帧只走一条介质 --- */
 static bool transport_send(const uint8_t* data, size_t len, bool use_udp) {
     if (use_udp && g_udpFd >= 0) {
-        ssize_t n = sendto(g_udpFd, data, len, 0, (struct sockaddr*)&g_remoteAddr, sizeof(g_remoteAddr));
-        if (n < 0) return false;
-        usleep(50);
-        return true;
+        int retry = 0;
+        while (retry < 50) { // 最大重试 50 次
+            ssize_t n = sendto(g_udpFd, data, len, 0, (struct sockaddr*)&g_remoteAddr, sizeof(g_remoteAddr));
+            if (n >= 0) {
+                usleep(5000);
+                //确保每个 UDP 包（880字节）之间有 5 毫秒的物理间隔
+                return true;
+            }
+            // 队列满时，主动让出 CPU 等待内核清空发送队列
+            //EAGAIN (11) 或 ENOBUFS (105) 表示内核 TX 队列已满
+            if (errno == EAGAIN || errno == EWOULDBLOCK || errno == ENOBUFS) {
+                usleep(500); 
+                retry++;
+                continue;
+            }
+            break;
+        }
+        return false;
     }
+
     if (!use_udp && g_serialFd >= 0) {
         return write_all_paced(data, len);
     }
@@ -923,7 +944,17 @@ int main(int argc, char** argv) {
     }
 
     // ===== 自动选择通路：检测网线物理连接 (carrier) =====
-    bool link = net_link_up();
+    printf("正在唤醒网卡并检测物理链路 (最多等待 5 秒)...\n");
+    system("ifconfig eth0 up 2>/dev/null"); // 强制唤醒网卡，如果网卡是 down 状态，carrier 是读不到的
+
+    bool link = false;
+    for (int i = 0; i < 50; i++) { // 循环 50 次，每次 100ms，最多等 5 秒
+        if (net_link_up()) {
+            link = true;
+            break;
+        }
+        usleep(100000); // 停顿 100 毫秒
+    }
     bool force_serial = (argc >= 2 && strcmp(argv[1], "--serial") == 0);
     bool force_udp    = (argc >= 2 && strcmp(argv[1], "--udp") == 0);
 

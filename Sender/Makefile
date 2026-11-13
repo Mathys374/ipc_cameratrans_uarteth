@@ -5,11 +5,11 @@ CROSS_COMPILE ?= /opt/atk-dlrv1126b-toolchain/bin/aarch64-linux-
 MPP_INC = /home/alientek/mpp/inc
 MPP_LIB = /home/alientek/rv1126_mpp/lib
 
-# ★ 新增：分别定义 C 和 C++ 编译器
+# 分别定义 C 和 C++ 编译器
 CC       = $(CROSS_COMPILE)gcc
 CXX      = $(CROSS_COMPILE)g++
 
-# ★ 新增：抽取公共编译选项
+# 抽取公共编译选项
 COMMON_FLAGS = -O3 -Wall -march=armv8-a+simd -ftree-vectorize \
                -I$(MPP_INC) \
                -I..   # ★ 告诉编译器去上一级目录找 fec.h
@@ -23,7 +23,7 @@ LDFLAGS  = -L$(MPP_LIB) -Wl,-rpath-link,$(MPP_LIB) \
 
 TARGET   = ipc_sender_uarteth
 
-# ★ 新增：区分 C 源文件和 C++ 源文件
+# 区分 C 源文件和 C++ 源文件
 C_SRCS   = ../fec.c    # 指向上一级目录的 fec.c
 CXX_SRCS = ipc_sender.cpp
 
